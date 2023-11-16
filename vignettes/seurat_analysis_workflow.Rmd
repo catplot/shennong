@@ -1,0 +1,125 @@
+---
+title: "Comprehensive guide to Seurat analysis with `sn_run` functions"
+author: 
+- name: Songqi Duan
+  email: songqi.duan@outlook.com
+  affiliation: College of Food Science, Sichuan Agricultural University, Yaan, China
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Comprehensive guide to Seurat analysis with `sn_run` functions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6
+)
+```
+
+This document serves as a comprehensive guide for conducting Seurat analysis in single-cell RNA sequencing data using `sn_run` functions. It covers the standard workflow and the SCtransform workflow, illustrating each step with practical examples.
+
+# Load pakcages
+
+```{r setup}
+library(Shennong)
+library(Seurat)
+```
+
+# 1. PBMC3k guided tutorial
+
+## Load data and create Seurat object
+
+```{r load data}
+data_dir <- "/datapool/datasets/scrna-seq/pbmc3k/filtered_gene_bc_matrices/hg19"
+counts <- Read10X(data.dir = data_dir)
+seurat_obj <- CreateSeuratObject(
+  counts = counts,
+  project = "pbmc3k",
+  min.cells = 3,
+  min.features = 200
+)
+seurat_obj <- PercentageFeatureSet(seurat_obj,
+  pattern = "^MT-",
+  col.name = "percent.mt"
+)
+seurat_obj <- subset(
+  seurat_obj,
+  subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5
+)
+```
+
+## Standard `Seurat` workflow
+
+```{r standard}
+seurat_obj <- sn_run_seurat(
+  object = seurat_obj,
+  workflow = "standard",
+  nfeatures = 2000,
+  dims = 1:10
+)
+
+DimPlot(object = seurat_obj, label = TRUE)
+```
+
+## SCtransform workflow
+
+```{r sctransform}
+seurat_obj <- sn_run_seurat(
+  object = seurat_obj,
+  workflow = "sctransform",
+  vars_to_regress = "percent.mt"
+)
+
+DimPlot(object = seurat_obj, label = TRUE)
+```
+
+# 2. Integrative analysis
+
+```{r}
+file <- "/datapool/datasets/scrna-seq/ifnb/ifnb.rds"
+seurat_obj <- readRDS(file = file)
+```
+
+## Standardize gene symbols
+
+The first critical step in batch effect correction is to ensure that the gene names in your datasets are harmonized. If different studies use different naming conventions, synonyms, etc., methods for dimensionality reduction will treat these genes as entirely different variables, and introducing artificial differences between datasets. It is recommended that your pre-processing pipeline takes care of resolving ambiguities in gene naming across datasets. You can use `sn_standardize_genes()` but there are other tools such as HGNChelper
+
+```{r standardize genes, message=TRUE}
+path <- "/datapool/genome/homo_sapiens/GRCh38.p14/ensembl_110.mart_export.tsv"
+seurat_obj <- sn_standardize_genes(
+  object = seurat_obj,
+  ensembl_gene_table = path
+)
+```
+
+```{r}
+seurat_obj <- sn_run_seurat(
+  object = seurat_obj,
+  workflow = "standard",
+  nfeatures = 2000,
+  batch = "stim",
+  integration_method = "cca"
+)
+
+DimPlot(
+  object = seurat_obj,
+  group.by = "seurat_annotations",
+  label = TRUE
+)
+```
+
+<details>
+
+<summary>**Session Info**</summary>
+
+```{r}
+sessionInfo()
+```
+
+</details>

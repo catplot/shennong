@@ -1,0 +1,29 @@
+url: https://shennong.catplot.org
+
+authors:
+  Songqi Duan:
+    href: https://songqi.org
+
+destination: ../../website/shennong
+
+template:
+  bootstrap: 5
+  includes:
+    in_header:
+      <script async src="https://umami.catplot.com/script.js" data-website-id="0a98be4f-84fc-46bf-82cb-9de70ea20d2a"></script>
+
+reference:
+- title: "Seurat Workflow"
+  desc: "Functions for running and customizing Seurat workflows."
+- contents:
+  - has_concept("scrna-seq")
+
+- title: "Utility functions"
+  desc: "Useful functions to help with a variety of tasks"
+- contents:
+  - has_concept("utilities")
+
+- title: "Re-exports"
+  desc: "Functions re-exported from other packages"
+- contents:
+  - reexports
